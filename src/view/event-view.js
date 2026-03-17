@@ -1,4 +1,4 @@
-import { createElement } from '../render.js';
+import AbstractView from '../framework/view/abstract-view.js';
 import {
   capitalizeFirstLetter,
   humanizePointDate,
@@ -84,26 +84,29 @@ function createEventTemplate(point, allOffers, allDestinations) {
   `;
 }
 
-export default class EventView {
-  constructor({ point, offers, destinations }) {
-    this.point = point;
-    this.offers = offers;
-    this.destinations = destinations;
-    this.element = null;
+export default class EventView extends AbstractView {
+  #point = null;
+  #offers = null;
+  #destinations = null;
+  #handleEditClick = null;
+
+  constructor({ point, offers, destinations, onEditClick }) {
+    super();
+    this.#point = point;
+    this.#offers = offers;
+    this.#destinations = destinations;
+    this.#handleEditClick = onEditClick;
+
+    this.element.querySelector('.event__rollup-btn')
+      .addEventListener('click', this.#editClickHandler);
   }
 
-  getTemplate() {
-    return createEventTemplate(this.point, this.offers, this.destinations);
+  get template() {
+    return createEventTemplate(this.#point, this.#offers, this.#destinations);
   }
 
-  getElement() {
-    if (!this.element) {
-      this.element = createElement(this.getTemplate());
-    }
-    return this.element;
-  }
-
-  removeElement() {
-    this.element = null;
-  }
+  #editClickHandler = (evt) => {
+    evt.preventDefault();
+    this.#handleEditClick();
+  };
 }
