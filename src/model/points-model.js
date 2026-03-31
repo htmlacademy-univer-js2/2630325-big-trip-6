@@ -18,4 +18,10 @@ export default class PointsModel {
   get destinations() {
     return this.#destinations;
   }
+
+  updatePoint(update) {
+    this.#points = this.#points.map((point) =>
+      point.id === update.id ? update : point
+    );
+  }
 }
