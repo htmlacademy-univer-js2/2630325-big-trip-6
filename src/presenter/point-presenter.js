@@ -36,27 +36,16 @@ export default class PointPresenter {
       point: this.#point,
       offers: this.#offers,
       destinations: this.#destinations,
-      onEditClick: () => {
-        this.#replacePointToForm();
-      },
-      onFavoriteClick: () => {
-        this.#handleDataChange({
-          ...this.#point,
-          isFavorite: !this.#point.isFavorite,
-        });
-      },
+      onEditClick: this.#handleEditClick,
+      onFavoriteClick: this.#handleFavoriteClick,
     });
 
     this.#pointEditComponent = new EventEditView({
       point: this.#point,
       offers: this.#offers,
       destinations: this.#destinations,
-      onFormSubmit: () => {
-        this.#replaceFormToPoint();
-      },
-      onCloseClick: () => {
-        this.#replaceFormToPoint();
-      },
+      onFormSubmit: this.#handleFormSubmit,
+      onCloseClick: this.#handleCloseClick,
     });
 
     if (prevPointComponent === null || prevPointEditComponent === null) {
@@ -83,6 +72,7 @@ export default class PointPresenter {
 
   resetView() {
     if (this.#mode !== Mode.DEFAULT) {
+      this.#pointEditComponent.reset(this.#point);
       this.#replaceFormToPoint();
     }
   }
@@ -103,7 +93,29 @@ export default class PointPresenter {
   #escKeyDownHandler = (evt) => {
     if (evt.key === 'Escape') {
       evt.preventDefault();
+      this.#pointEditComponent.reset(this.#point);
       this.#replaceFormToPoint();
     }
+  };
+
+  #handleEditClick = () => {
+    this.#replacePointToForm();
+  };
+
+  #handleFavoriteClick = () => {
+    this.#handleDataChange({
+      ...this.#point,
+      isFavorite: !this.#point.isFavorite,
+    });
+  };
+
+  #handleFormSubmit = (updatedPoint) => {
+    this.#handleDataChange(updatedPoint);
+    this.#replaceFormToPoint();
+  };
+
+  #handleCloseClick = () => {
+    this.#pointEditComponent.reset(this.#point);
+    this.#replaceFormToPoint();
   };
 }

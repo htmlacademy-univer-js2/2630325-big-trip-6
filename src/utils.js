@@ -110,6 +110,18 @@ function sortByPrice(pointA, pointB) {
   return pointB.basePrice - pointA.basePrice;
 }
 
+function escapeHtml(str) {
+  if (!str) {
+    return '';
+  }
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 export {
   getRandomInteger,
   getRandomArrayElement,
@@ -124,4 +136,5 @@ export {
   sortByDay,
   sortByTime,
   sortByPrice,
+  escapeHtml,
 };
