@@ -16,14 +16,21 @@ const DESCRIPTIONS = [
   'In rutrum ac purus sit amet tempus.',
 ];
 
+const MIN_SENTENCE_COUNT = 1;
+const MAX_SENTENCE_COUNT = 5;
+const MIN_PICTURE_COUNT = 1;
+const MAX_PICTURE_COUNT = 5;
+const MAX_RANDOM_NUMBER = 1000;
+
 function generateDescription() {
-  const sentenceCount = getRandomInteger(1, 5);
+  const sentenceCount = getRandomInteger(MIN_SENTENCE_COUNT, MAX_SENTENCE_COUNT);
   return Array.from({ length: sentenceCount }, () => getRandomArrayElement(DESCRIPTIONS)).join(' ');
 }
 
 function generatePictures() {
-  return Array.from({ length: getRandomInteger(1, 5) }, (_, index) => ({
-    src: `https://loremflickr.com/248/152?random=${getRandomInteger(1, 1000)}`,
+  const pictureCount = getRandomInteger(MIN_PICTURE_COUNT, MAX_PICTURE_COUNT);
+  return Array.from({ length: pictureCount }, (_, index) => ({
+    src: `https://loremflickr.com/248/152?random=${getRandomInteger(1, MAX_RANDOM_NUMBER)}`,
     description: `Photo ${index + 1}`,
   }));
 }

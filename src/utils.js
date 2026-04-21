@@ -1,13 +1,12 @@
-import { FilterType } from './const.js';
+import dayjs from 'dayjs';
+import duration from 'dayjs/plugin/duration';
+import { FilterType, DateFormat } from './const.js';
 
-const MONTH_NAMES = [
-  'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
-  'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC',
-];
+dayjs.extend(duration);
 
-function getRandomInteger(a = 0, b = 1) {
-  const lower = Math.ceil(Math.min(a, b));
-  const upper = Math.floor(Math.max(a, b));
+function getRandomInteger(min = 0, max = 1) {
+  const lower = Math.ceil(Math.min(min, max));
+  const upper = Math.floor(Math.max(min, max));
   return Math.floor(lower + Math.random() * (upper - lower + 1));
 }
 
@@ -20,71 +19,58 @@ function capitalizeFirstLetter(string) {
 }
 
 function humanizePointDate(dateString) {
-  const date = new Date(dateString);
-  return `${MONTH_NAMES[date.getMonth()]} ${String(date.getDate()).padStart(2, '0')}`;
+  return dayjs(dateString).format(DateFormat.DATE_FORMAT).toUpperCase();
 }
 
 function humanizePointTime(dateString) {
-  const date = new Date(dateString);
-  const hours = String(date.getHours()).padStart(2, '0');
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-  return `${hours}:${minutes}`;
+  return dayjs(dateString).format(DateFormat.TIME_FORMAT);
 }
 
 function getDatetimeAttribute(dateString) {
-  const date = new Date(dateString);
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
+  return dayjs(dateString).format(DateFormat.DATETIME_ATTRIBUTE);
 }
 
 function getTimeAttribute(dateString) {
-  return `${getDatetimeAttribute(dateString)}T${humanizePointTime(dateString)}`;
+  return dayjs(dateString).format(DateFormat.TIME_ATTRIBUTE);
 }
 
 function formatEditDate(dateString) {
   if (!dateString) {
     return '';
   }
-  const date = new Date(dateString);
-  const day = String(date.getDate()).padStart(2, '0');
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const year = String(date.getFullYear()).slice(-2);
-  const hours = String(date.getHours()).padStart(2, '0');
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-  return `${day}/${month}/${year} ${hours}:${minutes}`;
+  return dayjs(dateString).format(DateFormat.EDIT_DATE_FORMAT);
 }
 
 function getDuration(dateFrom, dateTo) {
-  const diff = new Date(dateTo) - new Date(dateFrom);
-  const totalMinutes = Math.floor(diff / (1000 * 60));
-  const days = Math.floor(totalMinutes / (60 * 24));
-  const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
-  const minutes = totalMinutes % 60;
+  const diff = dayjs(dateTo).diff(dayjs(dateFrom));
+  const durationObj = dayjs.duration(diff);
+
+  const days = Math.floor(durationObj.asDays());
+  const hours = durationObj.hours();
+  const minutes = durationObj.minutes();
+
+  const PAD_LENGTH = 2;
+  const PAD_STRING = '0';
 
   if (days > 0) {
-    return `${String(days).padStart(2, '0')}D ${String(hours).padStart(2, '0')}H ${String(minutes).padStart(2, '0')}M`;
+    return `${String(days).padStart(PAD_LENGTH, PAD_STRING)}D ${String(hours).padStart(PAD_LENGTH, PAD_STRING)}H ${String(minutes).padStart(PAD_LENGTH, PAD_STRING)}M`;
   }
   if (hours > 0) {
-    return `${String(hours).padStart(2, '0')}H ${String(minutes).padStart(2, '0')}M`;
+    return `${String(hours).padStart(PAD_LENGTH, PAD_STRING)}H ${String(minutes).padStart(PAD_LENGTH, PAD_STRING)}M`;
   }
   return `${minutes}M`;
 }
 
-// ---------- Filter functions ----------
-
 function isPointFuture(point) {
-  return new Date(point.dateFrom) > new Date();
+  return dayjs().isBefore(dayjs(point.dateFrom));
 }
 
 function isPointPresent(point) {
-  const now = new Date();
-  return new Date(point.dateFrom) <= now && new Date(point.dateTo) >= now;
+  return dayjs().isAfter(dayjs(point.dateFrom)) && dayjs().isBefore(dayjs(point.dateTo));
 }
 
 function isPointPast(point) {
-  return new Date(point.dateTo) < new Date();
+  return dayjs().isAfter(dayjs(point.dateTo));
 }
 
 const filter = {
@@ -94,15 +80,13 @@ const filter = {
   [FilterType.PAST]: (points) => points.filter(isPointPast),
 };
 
-// ---------- Sort functions ----------
-
 function sortByDay(pointA, pointB) {
-  return new Date(pointA.dateFrom) - new Date(pointB.dateFrom);
+  return dayjs(pointA.dateFrom).diff(dayjs(pointB.dateFrom));
 }
 
 function sortByTime(pointA, pointB) {
-  const durationA = new Date(pointA.dateTo) - new Date(pointA.dateFrom);
-  const durationB = new Date(pointB.dateTo) - new Date(pointB.dateFrom);
+  const durationA = dayjs(pointA.dateTo).diff(dayjs(pointA.dateFrom));
+  const durationB = dayjs(pointB.dateTo).diff(dayjs(pointB.dateFrom));
   return durationB - durationA;
 }
 

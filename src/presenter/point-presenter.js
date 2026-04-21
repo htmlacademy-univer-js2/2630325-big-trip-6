@@ -1,11 +1,7 @@
 import EventView from '../view/event-view.js';
 import EventEditView from '../view/event-edit-view.js';
 import { render, replace, remove } from '../framework/render.js';
-
-const Mode = {
-  DEFAULT: 'DEFAULT',
-  EDITING: 'EDITING',
-};
+import { Mode } from '../const.js';
 
 export default class PointPresenter {
   #container = null;

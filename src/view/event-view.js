@@ -42,8 +42,8 @@ function createEventTemplate(point, allOffers, allDestinations) {
     destination: destinationId,
   } = point;
 
-  const destination = allDestinations.find((d) => d.id === destinationId);
-  const typeOffers = allOffers.find((o) => o.type === type);
+  const destination = allDestinations.find((item) => item.id === destinationId);
+  const typeOffers = allOffers.find((item) => item.type === type);
   const selectedOffers = typeOffers
     ? typeOffers.offers.filter((offer) => selectedOfferIds.includes(offer.id))
     : [];
