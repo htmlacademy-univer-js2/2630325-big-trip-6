@@ -34,7 +34,7 @@ function createDestinationListTemplate(destinations) {
     .join('');
 }
 
-function createOffersTemplate(availableOffers, selectedOfferIds) {
+function createOffersTemplate(availableOffers, selectedOfferIds, isDisabled) {
   if (!availableOffers || availableOffers.length === 0) {
     return '';
   }
@@ -52,6 +52,7 @@ function createOffersTemplate(availableOffers, selectedOfferIds) {
             name="event-offer-${offer.id}"
             data-offer-id="${offer.id}"
             ${isChecked ? 'checked' : ''}
+            ${isDisabled ? 'disabled' : ''}
           >
           <label class="event__offer-label" for="event-offer-${offer.id}">
             <span class="event__offer-title">${escapeHtml(offer.title)}</span>
@@ -103,7 +104,7 @@ function createDestinationTemplate(destination) {
   `;
 }
 
-function createEventEditTemplate(state, allOffers, allDestinations) {
+function createEventEditTemplate(state, allOffers, allDestinations, isCreating) {
   const {
     type,
     dateFrom,
@@ -111,17 +112,20 @@ function createEventEditTemplate(state, allOffers, allDestinations) {
     basePrice,
     offers: selectedOfferIds,
     destination: destinationId,
+    isDisabled,
   } = state;
 
   const destination = allDestinations.find((item) => item.id === destinationId);
   const typeOffers = allOffers.find((item) => item.type === type);
   const availableOffers = typeOffers ? typeOffers.offers : [];
 
-  const offersTemplate = createOffersTemplate(availableOffers, selectedOfferIds);
+  const offersTemplate = createOffersTemplate(availableOffers, selectedOfferIds, isDisabled);
   const destinationTemplate = createDestinationTemplate(destination);
   const detailsTemplate = offersTemplate || destinationTemplate
     ? `<section class="event__details">${offersTemplate}${destinationTemplate}</section>`
     : '';
+
+  const resetButtonText = isCreating ? 'Cancel' : 'Delete';
 
   return `
     <li class="trip-events__item">
@@ -142,6 +146,7 @@ function createEventEditTemplate(state, allOffers, allDestinations) {
               class="event__type-toggle  visually-hidden"
               id="event-type-toggle-1"
               type="checkbox"
+              ${isDisabled ? 'disabled' : ''}
             >
 
             <div class="event__type-list">
@@ -163,6 +168,7 @@ function createEventEditTemplate(state, allOffers, allDestinations) {
               name="event-destination"
               value="${destination ? escapeHtml(destination.name) : ''}"
               list="destination-list-1"
+              ${isDisabled ? 'disabled' : ''}
             >
             <datalist id="destination-list-1">
               ${createDestinationListTemplate(allDestinations)}
@@ -177,6 +183,7 @@ function createEventEditTemplate(state, allOffers, allDestinations) {
               type="text"
               name="event-start-time"
               value="${formatEditDate(dateFrom)}"
+              ${isDisabled ? 'disabled' : ''}
             >
             &mdash;
             <label class="visually-hidden" for="event-end-time-1">To</label>
@@ -186,6 +193,7 @@ function createEventEditTemplate(state, allOffers, allDestinations) {
               type="text"
               name="event-end-time"
               value="${formatEditDate(dateTo)}"
+              ${isDisabled ? 'disabled' : ''}
             >
           </div>
 
@@ -200,14 +208,13 @@ function createEventEditTemplate(state, allOffers, allDestinations) {
               type="text"
               name="event-price"
               value="${basePrice}"
+              ${isDisabled ? 'disabled' : ''}
             >
           </div>
 
-          <button class="event__save-btn  btn  btn--blue" type="submit">Save</button>
-          <button class="event__reset-btn" type="reset">Delete</button>
-          <button class="event__rollup-btn" type="button">
-            <span class="visually-hidden">Open event</span>
-          </button>
+          <button class="event__save-btn  btn  btn--blue" type="submit" ${isDisabled ? 'disabled' : ''}>Save</button>
+          <button class="event__reset-btn" type="reset" ${isDisabled ? 'disabled' : ''}>${resetButtonText}</button>
+          ${!isCreating ? '<button class="event__rollup-btn" type="button"><span class="visually-hidden">Open event</span></button>' : ''}
         </header>
         ${detailsTemplate}
       </form>
@@ -219,23 +226,27 @@ export default class EventEditView extends AbstractStatefulView {
   #offers = null;
   #destinations = null;
   #handleFormSubmit = null;
+  #handleDeleteClick = null;
   #handleCloseClick = null;
   #dateFromPicker = null;
   #dateToPicker = null;
+  #isCreating = false;
 
-  constructor({ point, offers, destinations, onFormSubmit, onCloseClick }) {
+  constructor({ point, offers, destinations, onFormSubmit, onDeleteClick, onCloseClick, isCreating = false }) {
     super();
     this.#offers = offers;
     this.#destinations = destinations;
     this.#handleFormSubmit = onFormSubmit;
+    this.#handleDeleteClick = onDeleteClick;
     this.#handleCloseClick = onCloseClick;
+    this.#isCreating = isCreating;
 
     this._setState(EventEditView.parsePointToState(point));
     this._restoreHandlers();
   }
 
   get template() {
-    return createEventEditTemplate(this._state, this.#offers, this.#destinations);
+    return createEventEditTemplate(this._state, this.#offers, this.#destinations, this.#isCreating);
   }
 
   removeElement() {
@@ -259,12 +270,20 @@ export default class EventEditView extends AbstractStatefulView {
   _restoreHandlers() {
     this.element.querySelector('form')
       .addEventListener('submit', this.#formSubmitHandler);
-    this.element.querySelector('.event__rollup-btn')
-      .addEventListener('click', this.#closeClickHandler);
+    this.element.querySelector('.event__reset-btn')
+      .addEventListener('click', this.#formDeleteHandler);
+
+    if (!this.#isCreating) {
+      this.element.querySelector('.event__rollup-btn')
+        .addEventListener('click', this.#closeClickHandler);
+    }
+
     this.element.querySelector('.event__type-group')
       .addEventListener('change', this.#typeChangeHandler);
     this.element.querySelector('.event__input--destination')
       .addEventListener('change', this.#destinationChangeHandler);
+    this.element.querySelector('.event__input--price')
+      .addEventListener('input', this.#priceInputHandler);
 
     this.#setDatepickers();
   }
@@ -302,6 +321,11 @@ export default class EventEditView extends AbstractStatefulView {
     this.#handleFormSubmit(EventEditView.parseStateToPoint(this._state));
   };
 
+  #formDeleteHandler = (evt) => {
+    evt.preventDefault();
+    this.#handleDeleteClick(EventEditView.parseStateToPoint(this._state));
+  };
+
   #closeClickHandler = (evt) => {
     evt.preventDefault();
     this.#handleCloseClick();
@@ -322,11 +346,24 @@ export default class EventEditView extends AbstractStatefulView {
     );
 
     if (!selectedDestination) {
+      evt.target.value = '';
       return;
     }
 
     this.updateElement({
       destination: selectedDestination.id,
+    });
+  };
+
+  #priceInputHandler = (evt) => {
+    evt.preventDefault();
+    const PRICE_REGEX = /^\d*$/;
+    if (!PRICE_REGEX.test(evt.target.value)) {
+      evt.target.value = this._state.basePrice;
+      return;
+    }
+    this._setState({
+      basePrice: evt.target.value === '' ? 0 : Number(evt.target.value),
     });
   };
 
@@ -345,10 +382,15 @@ export default class EventEditView extends AbstractStatefulView {
   };
 
   static parsePointToState(point) {
-    return { ...point };
+    return {
+      ...point,
+      isDisabled: false,
+    };
   }
 
   static parseStateToPoint(state) {
-    return { ...state };
+    const point = { ...state };
+    delete point.isDisabled;
+    return point;
   }
 }

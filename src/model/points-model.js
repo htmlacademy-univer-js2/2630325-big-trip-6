@@ -19,6 +19,14 @@ export default class PointsModel {
     return this.#destinations;
   }
 
+  addPoint(point) {
+    this.#points = [point, ...this.#points];
+  }
+
+  deletePoint(pointId) {
+    this.#points = this.#points.filter((point) => point.id !== pointId);
+  }
+
   updatePoint(update) {
     this.#points = this.#points.map((point) =>
       point.id === update.id ? update : point

@@ -1,7 +1,7 @@
 import EventView from '../view/event-view.js';
 import EventEditView from '../view/event-edit-view.js';
 import { render, replace, remove } from '../framework/render.js';
-import { Mode } from '../const.js';
+import { Mode, UserAction, UpdateType } from '../const.js';
 
 export default class PointPresenter {
   #container = null;
@@ -41,6 +41,7 @@ export default class PointPresenter {
       offers: this.#offers,
       destinations: this.#destinations,
       onFormSubmit: this.#handleFormSubmit,
+      onDeleteClick: this.#handleDeleteClick,
       onCloseClick: this.#handleCloseClick,
     });
 
@@ -99,15 +100,27 @@ export default class PointPresenter {
   };
 
   #handleFavoriteClick = () => {
-    this.#handleDataChange({
-      ...this.#point,
-      isFavorite: !this.#point.isFavorite,
-    });
+    this.#handleDataChange(
+      UserAction.UPDATE_POINT,
+      UpdateType.PATCH,
+      { ...this.#point, isFavorite: !this.#point.isFavorite }
+    );
   };
 
   #handleFormSubmit = (updatedPoint) => {
-    this.#handleDataChange(updatedPoint);
-    this.#replaceFormToPoint();
+    this.#handleDataChange(
+      UserAction.UPDATE_POINT,
+      UpdateType.MINOR,
+      updatedPoint
+    );
+  };
+
+  #handleDeleteClick = (point) => {
+    this.#handleDataChange(
+      UserAction.DELETE_POINT,
+      UpdateType.MINOR,
+      point
+    );
   };
 
   #handleCloseClick = () => {
