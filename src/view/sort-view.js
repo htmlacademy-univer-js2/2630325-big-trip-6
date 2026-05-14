@@ -1,8 +1,9 @@
 import AbstractView from '../framework/view/abstract-view.js';
-import { SortType, EnabledSortType } from '../const.js';
+import { SortType, ALLOWED_SORT_TYPES } from '../const.js';
+import { capitalizeWord } from '../utils.js';
 
-function createSortItemTemplate(sortType, currentSortType) {
-  const isDisabled = !EnabledSortType[sortType];
+const createSortItemTemplate = (sortType, currentSortType) => {
+  const isDisabled = !ALLOWED_SORT_TYPES.has(sortType);
   const isChecked = sortType === currentSortType;
 
   return `
@@ -17,12 +18,12 @@ function createSortItemTemplate(sortType, currentSortType) {
         ${isChecked ? 'checked' : ''}
         ${isDisabled ? 'disabled' : ''}
       >
-      <label class="trip-sort__btn" for="sort-${sortType}">${sortType}</label>
+      <label class="trip-sort__btn" for="sort-${sortType}">${capitalizeWord(sortType)}</label>
     </div>
   `;
-}
+};
 
-function createSortTemplate(currentSortType) {
+const createSortTemplate = (currentSortType) => {
   const sortItemsTemplate = Object.values(SortType)
     .map((type) => createSortItemTemplate(type, currentSortType))
     .join('');
@@ -32,7 +33,7 @@ function createSortTemplate(currentSortType) {
       ${sortItemsTemplate}
     </form>
   `;
-}
+};
 
 export default class SortView extends AbstractView {
   #currentSortType = null;
@@ -51,6 +52,9 @@ export default class SortView extends AbstractView {
   }
 
   #sortTypeChangeHandler = (evt) => {
+    if (evt.target.tagName !== 'INPUT') {
+      return;
+    }
     this.#handleSortTypeChange(evt.target.dataset.sortType);
   };
 }

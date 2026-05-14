@@ -15,16 +15,16 @@ export default class NewPointPresenter {
   }
 
   init(offers, destinations) {
-    if (this.#pointEditComponent !== null) {
+    if (this.#pointEditComponent) {
       return;
     }
 
     this.#pointEditComponent = new EventEditView({
       point: BLANK_POINT,
-      offers: offers,
-      destinations: destinations,
-      onFormSubmit: this.#handleFormSubmit,
-      onDeleteClick: this.#handleDeleteClick,
+      offers,
+      destinations,
+      onFormSubmit: this.#formSubmitHandler,
+      onDeleteClick: this.#deleteClickHandler,
       isCreating: true,
     });
 
@@ -33,7 +33,7 @@ export default class NewPointPresenter {
   }
 
   destroy() {
-    if (this.#pointEditComponent === null) {
+    if (!this.#pointEditComponent) {
       return;
     }
 
@@ -53,18 +53,16 @@ export default class NewPointPresenter {
   }
 
   setAborting() {
-    const resetFormState = () => {
-      this.#pointEditComponent.updateElement({
-        isDisabled: false,
-        isSaving: false,
-        isDeleting: false,
-      });
-    };
+    this.#pointEditComponent.updateElement({
+      isDisabled: false,
+      isSaving: false,
+      isDeleting: false,
+    });
 
-    this.#pointEditComponent.shake(resetFormState);
+    this.#pointEditComponent.shake();
   }
 
-  #handleFormSubmit = (point) => {
+  #formSubmitHandler = (point) => {
     this.#handleDataChange(
       UserAction.ADD_POINT,
       UpdateType.MINOR,
@@ -72,7 +70,7 @@ export default class NewPointPresenter {
     );
   };
 
-  #handleDeleteClick = () => {
+  #deleteClickHandler = () => {
     this.destroy();
   };
 

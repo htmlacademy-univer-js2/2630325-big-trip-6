@@ -7,8 +7,8 @@ import PointPresenter from './point-presenter.js';
 import NewPointPresenter from './new-point-presenter.js';
 import UiBlocker from '../framework/ui-blocker/ui-blocker.js';
 import { render, remove } from '../framework/render.js';
-import { SortType, UserAction, UpdateType, FilterType, TimeLimit } from '../const.js';
-import { sortByDay, sortByTime, sortByPrice, filter } from '../utils.js';
+import { SortType, UserAction, UpdateType, FilterType, BlockerTimeLimit } from '../const.js';
+import { sortByDay, sortByTime, sortByPrice, filterByRule } from '../utils.js';
 
 export default class BoardPresenter {
   #container = null;
@@ -28,8 +28,8 @@ export default class BoardPresenter {
   #filterType = FilterType.EVERYTHING;
   #isLoading = true;
   #uiBlocker = new UiBlocker({
-    lowerLimit: TimeLimit.LOWER_LIMIT,
-    upperLimit: TimeLimit.UPPER_LIMIT
+    lowerLimit: BlockerTimeLimit.LOWER_LIMIT,
+    upperLimit: BlockerTimeLimit.UPPER_LIMIT
   });
 
   constructor({ container, pointsModel, filterModel, onNewPointDestroy }) {
@@ -39,18 +39,25 @@ export default class BoardPresenter {
 
     this.#newPointPresenter = new NewPointPresenter({
       container: this.#eventListComponent.element,
-      onDataChange: this.#handleViewAction,
-      onDestroy: onNewPointDestroy,
+      onDataChange: this.#viewActionHandler,
+      onDestroy: () => {
+        onNewPointDestroy();
+
+        if (this.points.length === 0) {
+          remove(this.#noPointComponent);
+          this.#renderNoPoints();
+        }
+      },
     });
 
-    this.#pointsModel.addObserver(this.#handleModelEvent);
-    this.#filterModel.addObserver(this.#handleModelEvent);
+    this.#pointsModel.addObserver(this.#modelEventHandler);
+    this.#filterModel.addObserver(this.#modelEventHandler);
   }
 
   get points() {
     this.#filterType = this.#filterModel.filter;
     const points = this.#pointsModel.points;
-    const filteredPoints = filter[this.#filterType](points);
+    const filteredPoints = filterByRule[this.#filterType](points);
 
     switch (this.#currentSortType) {
       case SortType.TIME:
@@ -70,6 +77,12 @@ export default class BoardPresenter {
   createPoint() {
     this.#currentSortType = SortType.DAY;
     this.#filterModel.setFilter(UpdateType.MAJOR, FilterType.EVERYTHING);
+
+    if (this.points.length === 0) {
+      remove(this.#noPointComponent);
+      render(this.#eventListComponent, this.#container);
+    }
+
     this.#newPointPresenter.init(this.#pointsModel.offers, this.#pointsModel.destinations);
   }
 
@@ -102,7 +115,7 @@ export default class BoardPresenter {
   #renderSort() {
     this.#sortComponent = new SortView({
       currentSortType: this.#currentSortType,
-      onSortTypeChange: this.#handleSortTypeChange,
+      onSortTypeChange: this.#sortTypeChangeHandler,
     });
     render(this.#sortComponent, this.#container);
   }
@@ -121,8 +134,8 @@ export default class BoardPresenter {
       container: this.#eventListComponent.element,
       offers: this.#pointsModel.offers,
       destinations: this.#pointsModel.destinations,
-      onDataChange: this.#handleViewAction,
-      onModeChange: this.#handleModeChange,
+      onDataChange: this.#viewActionHandler,
+      onModeChange: this.#modeChangeHandler,
     });
 
     pointPresenter.init(point);
@@ -144,7 +157,7 @@ export default class BoardPresenter {
     }
   }
 
-  #handleViewAction = async (actionType, updateType, update) => {
+  #viewActionHandler = async (actionType, updateType, update) => {
     this.#uiBlocker.block();
 
     switch (actionType) {
@@ -177,7 +190,7 @@ export default class BoardPresenter {
     this.#uiBlocker.unblock();
   };
 
-  #handleModelEvent = (updateType, data) => {
+  #modelEventHandler = (updateType, data) => {
     switch (updateType) {
       case UpdateType.PATCH:
         this.#pointPresenters.get(data.id).init(data);
@@ -203,12 +216,12 @@ export default class BoardPresenter {
     }
   };
 
-  #handleModeChange = () => {
+  #modeChangeHandler = () => {
     this.#newPointPresenter.destroy();
     this.#pointPresenters.forEach((presenter) => presenter.resetView());
   };
 
-  #handleSortTypeChange = (sortType) => {
+  #sortTypeChangeHandler = (sortType) => {
     if (this.#currentSortType === sortType) {
       return;
     }

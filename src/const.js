@@ -1,4 +1,4 @@
-const POINT_TYPES = [
+const POINT_TYPES = Object.freeze([
   'taxi',
   'bus',
   'train',
@@ -8,103 +8,104 @@ const POINT_TYPES = [
   'check-in',
   'sightseeing',
   'restaurant',
-];
+]);
 
-const AUTHORIZATION = 'Basic hS2sfS44wcl1sa2j'; // Строка авторизации
-const END_POINT = 'https://24.objects.htmlacademy.pro/big-trip';
+const DEFAULT_POINT_TYPE = 'flight';
 
-const FilterType = {
+const SERVER_URL = 'https://24.objects.htmlacademy.pro/big-trip';
+const AUTH_TOKEN = 'Basic hS2sfS44wcl1sa2j';
+
+const FilterType = Object.freeze({
   EVERYTHING: 'everything',
   FUTURE: 'future',
   PRESENT: 'present',
   PAST: 'past',
-};
+});
 
-const NoPointMessage = {
+const EmptyListMessage = Object.freeze({
   [FilterType.EVERYTHING]: 'Click New Event to create your first point',
   [FilterType.PAST]: 'There are no past events now',
   [FilterType.PRESENT]: 'There are no present events now',
   [FilterType.FUTURE]: 'There are no future events now',
-};
+});
 
-const SortType = {
+const SortType = Object.freeze({
   DAY: 'day',
   EVENT: 'event',
   TIME: 'time',
   PRICE: 'price',
   OFFER: 'offer',
-};
+});
 
-const EnabledSortType = {
-  [SortType.DAY]: true,
-  [SortType.EVENT]: false,
-  [SortType.TIME]: true,
-  [SortType.PRICE]: true,
-  [SortType.OFFER]: false,
-};
+const ALLOWED_SORT_TYPES = new Set([
+  SortType.DAY,
+  SortType.TIME,
+  SortType.PRICE,
+]);
 
-const DateFormat = {
-  DATE_FORMAT: 'MMM DD',
-  TIME_FORMAT: 'HH:mm',
-  DATETIME_ATTRIBUTE: 'YYYY-MM-DD',
-  TIME_ATTRIBUTE: 'YYYY-MM-DDTHH:mm',
-  EDIT_DATE_FORMAT: 'DD/MM/YY HH:mm',
-};
+const DateFormat = Object.freeze({
+  SHORT_DATE: 'MMM DD',
+  TIME: 'HH:mm',
+  HTML_DATE: 'YYYY-MM-DD',
+  HTML_DATETIME: 'YYYY-MM-DDTHH:mm',
+  PICKER_DATETIME: 'DD/MM/YY HH:mm',
+});
 
-const Mode = {
+const Mode = Object.freeze({
   DEFAULT: 'DEFAULT',
   EDITING: 'EDITING',
-};
+});
 
-const UserAction = {
+const UserAction = Object.freeze({
   UPDATE_POINT: 'UPDATE_POINT',
   ADD_POINT: 'ADD_POINT',
   DELETE_POINT: 'DELETE_POINT',
-};
+});
 
-const UpdateType = {
+const UpdateType = Object.freeze({
   PATCH: 'PATCH',
   MINOR: 'MINOR',
   MAJOR: 'MAJOR',
   INIT: 'INIT',
   ERROR: 'ERROR',
-};
+});
 
-const BLANK_POINT = {
+const BLANK_POINT = Object.freeze({
   basePrice: 0,
   dateFrom: null,
   dateTo: null,
   destination: null,
   isFavorite: false,
   offers: [],
-  type: POINT_TYPES[0],
-};
+  type: DEFAULT_POINT_TYPE,
+});
 
-const Method = {
+const HttpMethod = Object.freeze({
   GET: 'GET',
   PUT: 'PUT',
   POST: 'POST',
   DELETE: 'DELETE',
-};
+});
 
-const TimeLimit = {
+const BlockerTimeLimit = Object.freeze({
   LOWER_LIMIT: 350,
   UPPER_LIMIT: 1000,
-};
+});
 
 export {
   POINT_TYPES,
-  AUTHORIZATION,
-  END_POINT,
+  DEFAULT_POINT_TYPE,
+  SERVER_URL,
+  AUTH_TOKEN,
   FilterType,
-  NoPointMessage,
+  EmptyListMessage,
   SortType,
-  EnabledSortType,
+  ALLOWED_SORT_TYPES,
   DateFormat,
   Mode,
   UserAction,
   UpdateType,
   BLANK_POINT,
-  Method,
-  TimeLimit,
+  HttpMethod,
+  BlockerTimeLimit,
 };

@@ -1,25 +1,22 @@
 import AbstractView from '../framework/view/abstract-view.js';
+import { capitalizeWord } from '../utils.js';
 
-function createFilterItemTemplate(filterItem, currentFilter) {
-  const { type, count } = filterItem;
+const createFilterItemTemplate = ({ type, count }, currentFilter) => `
+  <div class="trip-filters__filter">
+    <input
+      id="filter-${type}"
+      class="trip-filters__filter-input  visually-hidden"
+      type="radio"
+      name="trip-filter"
+      value="${type}"
+      ${type === currentFilter ? 'checked' : ''}
+      ${count === 0 ? 'disabled' : ''}
+    >
+    <label class="trip-filters__filter-label" for="filter-${type}">${capitalizeWord(type)}</label>
+  </div>
+`;
 
-  return `
-    <div class="trip-filters__filter">
-      <input
-        id="filter-${type}"
-        class="trip-filters__filter-input  visually-hidden"
-        type="radio"
-        name="trip-filter"
-        value="${type}"
-        ${type === currentFilter ? 'checked' : ''}
-        ${count === 0 ? 'disabled' : ''}
-      >
-      <label class="trip-filters__filter-label" for="filter-${type}">${type}</label>
-    </div>
-  `;
-}
-
-function createFilterTemplate(filters, currentFilter) {
+const createFilterTemplate = (filters, currentFilter) => {
   const filterItemsTemplate = filters
     .map((filterItem) => createFilterItemTemplate(filterItem, currentFilter))
     .join('');
@@ -30,7 +27,7 @@ function createFilterTemplate(filters, currentFilter) {
       <button class="visually-hidden" type="submit">Accept filter</button>
     </form>
   `;
-}
+};
 
 export default class FilterView extends AbstractView {
   #filters = null;
