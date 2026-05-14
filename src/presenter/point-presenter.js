@@ -7,11 +7,14 @@ export default class PointPresenter {
   #container = null;
   #pointComponent = null;
   #pointEditComponent = null;
+
   #point = null;
   #offers = null;
   #destinations = null;
+
   #handleDataChange = null;
   #handleModeChange = null;
+
   #mode = Mode.DEFAULT;
 
   constructor({ container, offers, destinations, onDataChange, onModeChange }) {
@@ -55,7 +58,8 @@ export default class PointPresenter {
     }
 
     if (this.#mode === Mode.EDITING) {
-      replace(this.#pointEditComponent, prevPointEditComponent);
+      replace(this.#pointComponent, prevPointEditComponent);
+      this.#mode = Mode.DEFAULT;
     }
 
     remove(prevPointComponent);
@@ -72,6 +76,41 @@ export default class PointPresenter {
       this.#pointEditComponent.reset(this.#point);
       this.#replaceFormToPoint();
     }
+  }
+
+  setSaving() {
+    if (this.#mode === Mode.EDITING) {
+      this.#pointEditComponent.updateElement({
+        isDisabled: true,
+        isSaving: true,
+      });
+    }
+  }
+
+  setDeleting() {
+    if (this.#mode === Mode.EDITING) {
+      this.#pointEditComponent.updateElement({
+        isDisabled: true,
+        isDeleting: true,
+      });
+    }
+  }
+
+  setAborting() {
+    if (this.#mode === Mode.DEFAULT) {
+      this.#pointComponent.shake();
+      return;
+    }
+
+    const resetFormState = () => {
+      this.#pointEditComponent.updateElement({
+        isDisabled: false,
+        isSaving: false,
+        isDeleting: false,
+      });
+    };
+
+    this.#pointEditComponent.shake(resetFormState);
   }
 
   #replacePointToForm() {
@@ -102,7 +141,7 @@ export default class PointPresenter {
   #handleFavoriteClick = () => {
     this.#handleDataChange(
       UserAction.UPDATE_POINT,
-      UpdateType.PATCH,
+      UpdateType.MINOR,
       { ...this.#point, isFavorite: !this.#point.isFavorite }
     );
   };

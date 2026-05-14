@@ -8,14 +8,12 @@ export default class NewPointPresenter {
   #handleDestroy = null;
   #pointEditComponent = null;
 
-  // Убрали offers и destinations из параметров конструктора
   constructor({ container, onDataChange, onDestroy }) {
     this.#container = container;
     this.#handleDataChange = onDataChange;
     this.#handleDestroy = onDestroy;
   }
 
-  // Теперь передаем offers и destinations прямо в init в момент клика по кнопке
   init(offers, destinations) {
     if (this.#pointEditComponent !== null) {
       return;
@@ -45,6 +43,25 @@ export default class NewPointPresenter {
     this.#pointEditComponent = null;
 
     document.removeEventListener('keydown', this.#escKeyDownHandler);
+  }
+
+  setSaving() {
+    this.#pointEditComponent.updateElement({
+      isDisabled: true,
+      isSaving: true,
+    });
+  }
+
+  setAborting() {
+    const resetFormState = () => {
+      this.#pointEditComponent.updateElement({
+        isDisabled: false,
+        isSaving: false,
+        isDeleting: false,
+      });
+    };
+
+    this.#pointEditComponent.shake(resetFormState);
   }
 
   #handleFormSubmit = (point) => {

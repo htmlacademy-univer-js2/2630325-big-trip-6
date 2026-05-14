@@ -7,7 +7,7 @@ import 'flatpickr/dist/flatpickr.min.css';
 const FLATPICKR_DATE_FORMAT = 'd/m/y H:i';
 const FLATPICKR_FIRST_DAY_OF_WEEK = 1;
 
-function createTypeListTemplate(currentType) {
+function createTypeListTemplate(currentType, isDisabled) {
   return POINT_TYPES
     .map((type) => `
       <div class="event__type-item">
@@ -18,6 +18,7 @@ function createTypeListTemplate(currentType) {
           name="event-type"
           value="${type}"
           ${type === currentType ? 'checked' : ''}
+          ${isDisabled ? 'disabled' : ''}
         >
         <label
           class="event__type-label  event__type-label--${type}"
@@ -42,7 +43,6 @@ function createOffersTemplate(availableOffers, selectedOfferIds, isDisabled) {
   const items = availableOffers
     .map((offer) => {
       const isChecked = selectedOfferIds.includes(offer.id);
-
       return `
         <div class="event__offer-selector">
           <input
@@ -113,6 +113,8 @@ function createEventEditTemplate(state, allOffers, allDestinations, isCreating) 
     offers: selectedOfferIds,
     destination: destinationId,
     isDisabled,
+    isSaving,
+    isDeleting,
   } = state;
 
   const destination = allDestinations.find((item) => item.id === destinationId);
@@ -121,11 +123,17 @@ function createEventEditTemplate(state, allOffers, allDestinations, isCreating) 
 
   const offersTemplate = createOffersTemplate(availableOffers, selectedOfferIds, isDisabled);
   const destinationTemplate = createDestinationTemplate(destination);
+
   const detailsTemplate = offersTemplate || destinationTemplate
     ? `<section class="event__details">${offersTemplate}${destinationTemplate}</section>`
     : '';
 
-  const resetButtonText = isCreating ? 'Cancel' : 'Delete';
+  let resetBtnText = '';
+  if (isCreating) {
+    resetBtnText = 'Cancel';
+  } else {
+    resetBtnText = isDeleting ? 'Deleting...' : 'Delete';
+  }
 
   return `
     <li class="trip-events__item">
@@ -152,7 +160,7 @@ function createEventEditTemplate(state, allOffers, allDestinations, isCreating) 
             <div class="event__type-list">
               <fieldset class="event__type-group">
                 <legend class="visually-hidden">Event type</legend>
-                ${createTypeListTemplate(type)}
+                ${createTypeListTemplate(type, isDisabled)}
               </fieldset>
             </div>
           </div>
@@ -212,9 +220,17 @@ function createEventEditTemplate(state, allOffers, allDestinations, isCreating) 
             >
           </div>
 
-          <button class="event__save-btn  btn  btn--blue" type="submit" ${isDisabled ? 'disabled' : ''}>Save</button>
-          <button class="event__reset-btn" type="reset" ${isDisabled ? 'disabled' : ''}>${resetButtonText}</button>
-          ${!isCreating ? '<button class="event__rollup-btn" type="button"><span class="visually-hidden">Open event</span></button>' : ''}
+          <button class="event__save-btn  btn  btn--blue" type="submit" ${isDisabled ? 'disabled' : ''}>
+            ${isSaving ? 'Saving...' : 'Save'}
+          </button>
+          <button class="event__reset-btn" type="reset" ${isDisabled ? 'disabled' : ''}>
+            ${resetBtnText}
+          </button>
+          ${!isCreating ? `
+            <button class="event__rollup-btn" type="button" ${isDisabled ? 'disabled' : ''}>
+              <span class="visually-hidden">Open event</span>
+            </button>
+          ` : ''}
         </header>
         ${detailsTemplate}
       </form>
@@ -256,7 +272,6 @@ export default class EventEditView extends AbstractStatefulView {
       this.#dateFromPicker.destroy();
       this.#dateFromPicker = null;
     }
-
     if (this.#dateToPicker) {
       this.#dateToPicker.destroy();
       this.#dateToPicker = null;
@@ -270,6 +285,7 @@ export default class EventEditView extends AbstractStatefulView {
   _restoreHandlers() {
     this.element.querySelector('form')
       .addEventListener('submit', this.#formSubmitHandler);
+
     this.element.querySelector('.event__reset-btn')
       .addEventListener('click', this.#formDeleteHandler);
 
@@ -280,10 +296,17 @@ export default class EventEditView extends AbstractStatefulView {
 
     this.element.querySelector('.event__type-group')
       .addEventListener('change', this.#typeChangeHandler);
+
     this.element.querySelector('.event__input--destination')
       .addEventListener('change', this.#destinationChangeHandler);
+
     this.element.querySelector('.event__input--price')
       .addEventListener('input', this.#priceInputHandler);
+
+    const offersBlock = this.element.querySelector('.event__available-offers');
+    if (offersBlock) {
+      offersBlock.addEventListener('change', this.#offersChangeHandler);
+    }
 
     this.#setDatepickers();
   }
@@ -367,6 +390,22 @@ export default class EventEditView extends AbstractStatefulView {
     });
   };
 
+  #offersChangeHandler = (evt) => {
+    evt.preventDefault();
+    const clickedOfferId = evt.target.dataset.offerId;
+    let selectedOffers = [...this._state.offers];
+
+    if (evt.target.checked) {
+      selectedOffers.push(clickedOfferId);
+    } else {
+      selectedOffers = selectedOffers.filter((id) => id !== clickedOfferId);
+    }
+
+    this._setState({
+      offers: selectedOffers,
+    });
+  };
+
   #dateFromChangeHandler = ([userDate]) => {
     this._setState({
       dateFrom: userDate.toISOString(),
@@ -385,12 +424,16 @@ export default class EventEditView extends AbstractStatefulView {
     return {
       ...point,
       isDisabled: false,
+      isSaving: false,
+      isDeleting: false,
     };
   }
 
   static parseStateToPoint(state) {
     const point = { ...state };
     delete point.isDisabled;
+    delete point.isSaving;
+    delete point.isDeleting;
     return point;
   }
 }

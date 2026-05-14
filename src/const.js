@@ -83,6 +83,13 @@ const BLANK_POINT = {
 const Method = {
   GET: 'GET',
   PUT: 'PUT',
+  POST: 'POST',
+  DELETE: 'DELETE',
+};
+
+const TimeLimit = {
+  LOWER_LIMIT: 350,
+  UPPER_LIMIT: 1000,
 };
 
 export {
@@ -99,4 +106,5 @@ export {
   UpdateType,
   BLANK_POINT,
   Method,
+  TimeLimit,
 };
