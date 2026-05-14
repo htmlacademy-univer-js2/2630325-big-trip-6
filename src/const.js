@@ -77,7 +77,7 @@ const BLANK_POINT = {
   destination: null,
   isFavorite: false,
   offers: [],
-  type: POINT_TYPES[0],
+  type: 'flight',
 };
 
 const Method = {

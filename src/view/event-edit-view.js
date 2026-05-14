@@ -223,11 +223,13 @@ function createEventEditTemplate(state, allOffers, allDestinations, isCreating) 
           <button class="event__save-btn  btn  btn--blue" type="submit" ${isDisabled ? 'disabled' : ''}>
             ${isSaving ? 'Saving...' : 'Save'}
           </button>
-          <button class="event__reset-btn" type="reset" ${isDisabled ? 'disabled' : ''}>
+
+          <!-- Убрали disabled у кнопок Cancel/Delete/Свернуть -->
+          <button class="event__reset-btn" type="reset">
             ${resetBtnText}
           </button>
           ${!isCreating ? `
-            <button class="event__rollup-btn" type="button" ${isDisabled ? 'disabled' : ''}>
+            <button class="event__rollup-btn" type="button">
               <span class="visually-hidden">Open event</span>
             </button>
           ` : ''}

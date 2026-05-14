@@ -40,7 +40,14 @@ export default class BoardPresenter {
     this.#newPointPresenter = new NewPointPresenter({
       container: this.#eventListComponent.element,
       onDataChange: this.#handleViewAction,
-      onDestroy: onNewPointDestroy,
+      onDestroy: () => {
+        onNewPointDestroy();
+        // Если при закрытии формы точек всё ещё 0, возвращаем заглушку
+        if (this.points.length === 0) {
+          remove(this.#noPointComponent);
+          this.#renderNoPoints();
+        }
+      },
     });
 
     this.#pointsModel.addObserver(this.#handleModelEvent);
@@ -70,6 +77,13 @@ export default class BoardPresenter {
   createPoint() {
     this.#currentSortType = SortType.DAY;
     this.#filterModel.setFilter(UpdateType.MAJOR, FilterType.EVERYTHING);
+
+    // Если список пуст, убираем заглушку и принудительно рисуем <ul> для формы
+    if (this.points.length === 0) {
+      remove(this.#noPointComponent);
+      render(this.#eventListComponent, this.#container);
+    }
+
     this.#newPointPresenter.init(this.#pointsModel.offers, this.#pointsModel.destinations);
   }
 
