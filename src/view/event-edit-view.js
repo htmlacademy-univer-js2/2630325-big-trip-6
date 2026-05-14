@@ -1,41 +1,39 @@
 import AbstractStatefulView from '../framework/view/abstract-stateful-view.js';
-import { capitalizeFirstLetter, formatEditDate, escapeHtml } from '../utils.js';
-import { POINT_TYPES } from '../const.js';
+import { capitalizeWord, formatDate, escapeHtml } from '../utils.js';
+import { POINT_TYPES, DateFormat } from '../const.js';
 import flatpickr from 'flatpickr';
 import 'flatpickr/dist/flatpickr.min.css';
 
-const FLATPICKR_DATE_FORMAT = 'd/m/y H:i';
 const FLATPICKR_FIRST_DAY_OF_WEEK = 1;
+const DECIMAL_RADIX = 10;
+const PRICE_VALIDATION_PATTERN = /^\d*$/;
+const FLATPICKR_DATE_FORMAT = 'd/m/y H:i';
 
-function createTypeListTemplate(currentType, isDisabled) {
-  return POINT_TYPES
-    .map((type) => `
-      <div class="event__type-item">
-        <input
-          id="event-type-${type}-1"
-          class="event__type-input  visually-hidden"
-          type="radio"
-          name="event-type"
-          value="${type}"
-          ${type === currentType ? 'checked' : ''}
-          ${isDisabled ? 'disabled' : ''}
-        >
-        <label
-          class="event__type-label  event__type-label--${type}"
-          for="event-type-${type}-1"
-        >${capitalizeFirstLetter(type)}</label>
-      </div>
-    `)
-    .join('');
-}
+const createTypeListTemplate = (currentType, isDisabled) => POINT_TYPES
+  .map((type) => `
+    <div class="event__type-item">
+      <input
+        id="event-type-${type}-1"
+        class="event__type-input  visually-hidden"
+        type="radio"
+        name="event-type"
+        value="${type}"
+        ${type === currentType ? 'checked' : ''}
+        ${isDisabled ? 'disabled' : ''}
+      >
+      <label
+        class="event__type-label  event__type-label--${type}"
+        for="event-type-${type}-1"
+      >${capitalizeWord(type)}</label>
+    </div>
+  `)
+  .join('');
 
-function createDestinationListTemplate(destinations) {
-  return destinations
-    .map((destination) => `<option value="${escapeHtml(destination.name)}"></option>`)
-    .join('');
-}
+const createDestinationListTemplate = (destinations) => destinations
+  .map((destination) => `<option value="${escapeHtml(destination.name)}"></option>`)
+  .join('');
 
-function createOffersTemplate(availableOffers, selectedOfferIds, isDisabled) {
+const createOffersTemplate = (availableOffers, selectedOfferIds, isDisabled) => {
   if (!availableOffers || availableOffers.length === 0) {
     return '';
   }
@@ -72,39 +70,48 @@ function createOffersTemplate(availableOffers, selectedOfferIds, isDisabled) {
       </div>
     </section>
   `;
-}
+};
 
-function createDestinationTemplate(destination) {
-  if (!destination || !destination.description) {
+const createDestinationPhotosTemplate = (pictures) => {
+  if (!pictures || pictures.length === 0) {
     return '';
   }
 
-  const photosTemplate = destination.pictures && destination.pictures.length > 0
-    ? `
-      <div class="event__photos-container">
-        <div class="event__photos-tape">
-          ${destination.pictures.map((picture) => `
-            <img
-              class="event__photo"
-              src="${escapeHtml(picture.src)}"
-              alt="${escapeHtml(picture.description)}"
-            >
-          `).join('')}
-        </div>
+  const photos = pictures.map((picture) => `
+    <img class="event__photo" src="${escapeHtml(picture.src)}" alt="${escapeHtml(picture.description)}">
+  `).join('');
+
+  return `
+    <div class="event__photos-container">
+      <div class="event__photos-tape">
+        ${photos}
       </div>
-    `
-    : '';
+    </div>
+  `;
+};
+
+const createDestinationTemplate = (destination) => {
+  if (!destination || !destination.description) {
+    return '';
+  }
 
   return `
     <section class="event__section  event__section--destination">
       <h3 class="event__section-title  event__section-title--destination">Destination</h3>
       <p class="event__destination-description">${escapeHtml(destination.description)}</p>
-      ${photosTemplate}
+      ${createDestinationPhotosTemplate(destination.pictures)}
     </section>
   `;
-}
+};
 
-function createEventEditTemplate(state, allOffers, allDestinations, isCreating) {
+const getResetButtonText = (isCreating, isDeleting) => {
+  if (isCreating) {
+    return 'Cancel';
+  }
+  return isDeleting ? 'Deleting...' : 'Delete';
+};
+
+const createEventEditTemplate = (state, allOffers, allDestinations, isCreating) => {
   const {
     type,
     dateFrom,
@@ -128,27 +135,16 @@ function createEventEditTemplate(state, allOffers, allDestinations, isCreating) 
     ? `<section class="event__details">${offersTemplate}${destinationTemplate}</section>`
     : '';
 
-  let resetBtnText = '';
-  if (isCreating) {
-    resetBtnText = 'Cancel';
-  } else {
-    resetBtnText = isDeleting ? 'Deleting...' : 'Delete';
-  }
+  const resetBtnText = getResetButtonText(isCreating, isDeleting);
 
   return `
     <li class="trip-events__item">
-      <form class="event event--edit" action="#" method="post">
+      <form class="event event--edit" action="#" method="post" autocomplete="off">
         <header class="event__header">
           <div class="event__type-wrapper">
             <label class="event__type  event__type-btn" for="event-type-toggle-1">
               <span class="visually-hidden">Choose event type</span>
-              <img
-                class="event__type-icon"
-                width="17"
-                height="17"
-                src="img/icons/${type}.png"
-                alt="Event type icon"
-              >
+              <img class="event__type-icon" width="17" height="17" src="img/icons/${type}.png" alt="Event type icon">
             </label>
             <input
               class="event__type-toggle  visually-hidden"
@@ -156,7 +152,6 @@ function createEventEditTemplate(state, allOffers, allDestinations, isCreating) 
               type="checkbox"
               ${isDisabled ? 'disabled' : ''}
             >
-
             <div class="event__type-list">
               <fieldset class="event__type-group">
                 <legend class="visually-hidden">Event type</legend>
@@ -167,7 +162,7 @@ function createEventEditTemplate(state, allOffers, allDestinations, isCreating) 
 
           <div class="event__field-group  event__field-group--destination">
             <label class="event__label  event__type-output" for="event-destination-1">
-              ${capitalizeFirstLetter(type)}
+              ${capitalizeWord(type)}
             </label>
             <input
               class="event__input  event__input--destination"
@@ -190,7 +185,7 @@ function createEventEditTemplate(state, allOffers, allDestinations, isCreating) 
               id="event-start-time-1"
               type="text"
               name="event-start-time"
-              value="${formatEditDate(dateFrom)}"
+              value="${formatDate(dateFrom, DateFormat.PICKER_DATETIME)}"
               ${isDisabled ? 'disabled' : ''}
             >
             &mdash;
@@ -200,7 +195,7 @@ function createEventEditTemplate(state, allOffers, allDestinations, isCreating) 
               id="event-end-time-1"
               type="text"
               name="event-end-time"
-              value="${formatEditDate(dateTo)}"
+              value="${formatDate(dateTo, DateFormat.PICKER_DATETIME)}"
               ${isDisabled ? 'disabled' : ''}
             >
           </div>
@@ -223,8 +218,6 @@ function createEventEditTemplate(state, allOffers, allDestinations, isCreating) 
           <button class="event__save-btn  btn  btn--blue" type="submit" ${isDisabled ? 'disabled' : ''}>
             ${isSaving ? 'Saving...' : 'Save'}
           </button>
-
-          <!-- Убрали disabled у кнопок Cancel/Delete/Свернуть -->
           <button class="event__reset-btn" type="reset">
             ${resetBtnText}
           </button>
@@ -238,7 +231,7 @@ function createEventEditTemplate(state, allOffers, allDestinations, isCreating) 
       </form>
     </li>
   `;
-}
+};
 
 export default class EventEditView extends AbstractStatefulView {
   #offers = null;
@@ -270,11 +263,12 @@ export default class EventEditView extends AbstractStatefulView {
   removeElement() {
     super.removeElement();
 
-    if (this.#dateFromPicker) {
+    if (this.#dateFromPicker && typeof this.#dateFromPicker.destroy === 'function') {
       this.#dateFromPicker.destroy();
       this.#dateFromPicker = null;
     }
-    if (this.#dateToPicker) {
+
+    if (this.#dateToPicker && typeof this.#dateToPicker.destroy === 'function') {
       this.#dateToPicker.destroy();
       this.#dateToPicker = null;
     }
@@ -285,25 +279,16 @@ export default class EventEditView extends AbstractStatefulView {
   }
 
   _restoreHandlers() {
-    this.element.querySelector('form')
-      .addEventListener('submit', this.#formSubmitHandler);
-
-    this.element.querySelector('.event__reset-btn')
-      .addEventListener('click', this.#formDeleteHandler);
+    this.element.querySelector('form').addEventListener('submit', this.#formSubmitHandler);
+    this.element.querySelector('.event__reset-btn').addEventListener('click', this.#formDeleteHandler);
 
     if (!this.#isCreating) {
-      this.element.querySelector('.event__rollup-btn')
-        .addEventListener('click', this.#closeClickHandler);
+      this.element.querySelector('.event__rollup-btn').addEventListener('click', this.#closeClickHandler);
     }
 
-    this.element.querySelector('.event__type-group')
-      .addEventListener('change', this.#typeChangeHandler);
-
-    this.element.querySelector('.event__input--destination')
-      .addEventListener('change', this.#destinationChangeHandler);
-
-    this.element.querySelector('.event__input--price')
-      .addEventListener('input', this.#priceInputHandler);
+    this.element.querySelector('.event__type-group').addEventListener('change', this.#typeChangeHandler);
+    this.element.querySelector('.event__input--destination').addEventListener('change', this.#destinationChangeHandler);
+    this.element.querySelector('.event__input--price').addEventListener('input', this.#priceInputHandler);
 
     const offersBlock = this.element.querySelector('.event__available-offers');
     if (offersBlock) {
@@ -382,13 +367,13 @@ export default class EventEditView extends AbstractStatefulView {
 
   #priceInputHandler = (evt) => {
     evt.preventDefault();
-    const PRICE_REGEX = /^\d*$/;
-    if (!PRICE_REGEX.test(evt.target.value)) {
+    if (!PRICE_VALIDATION_PATTERN.test(evt.target.value)) {
       evt.target.value = this._state.basePrice;
       return;
     }
+
     this._setState({
-      basePrice: evt.target.value === '' ? 0 : Number(evt.target.value),
+      basePrice: evt.target.value === '' ? 0 : parseInt(evt.target.value, DECIMAL_RADIX),
     });
   };
 

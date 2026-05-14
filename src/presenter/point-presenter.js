@@ -28,42 +28,42 @@ export default class PointPresenter {
   init(point) {
     this.#point = point;
 
-    const prevPointComponent = this.#pointComponent;
-    const prevPointEditComponent = this.#pointEditComponent;
+    const previousPointComponent = this.#pointComponent;
+    const previousPointEditComponent = this.#pointEditComponent;
 
     this.#pointComponent = new EventView({
       point: this.#point,
       offers: this.#offers,
       destinations: this.#destinations,
-      onEditClick: this.#handleEditClick,
-      onFavoriteClick: this.#handleFavoriteClick,
+      onEditClick: this.#editClickHandler,
+      onFavoriteClick: this.#favoriteClickHandler,
     });
 
     this.#pointEditComponent = new EventEditView({
       point: this.#point,
       offers: this.#offers,
       destinations: this.#destinations,
-      onFormSubmit: this.#handleFormSubmit,
-      onDeleteClick: this.#handleDeleteClick,
-      onCloseClick: this.#handleCloseClick,
+      onFormSubmit: this.#formSubmitHandler,
+      onDeleteClick: this.#deleteClickHandler,
+      onCloseClick: this.#closeClickHandler,
     });
 
-    if (prevPointComponent === null || prevPointEditComponent === null) {
+    if (!previousPointComponent || !previousPointEditComponent) {
       render(this.#pointComponent, this.#container);
       return;
     }
 
     if (this.#mode === Mode.DEFAULT) {
-      replace(this.#pointComponent, prevPointComponent);
+      replace(this.#pointComponent, previousPointComponent);
     }
 
     if (this.#mode === Mode.EDITING) {
-      replace(this.#pointComponent, prevPointEditComponent);
+      replace(this.#pointComponent, previousPointEditComponent);
       this.#mode = Mode.DEFAULT;
     }
 
-    remove(prevPointComponent);
-    remove(prevPointEditComponent);
+    remove(previousPointComponent);
+    remove(previousPointEditComponent);
   }
 
   destroy() {
@@ -132,11 +132,11 @@ export default class PointPresenter {
     }
   };
 
-  #handleEditClick = () => {
+  #editClickHandler = () => {
     this.#replacePointToForm();
   };
 
-  #handleFavoriteClick = () => {
+  #favoriteClickHandler = () => {
     this.#handleDataChange(
       UserAction.UPDATE_POINT,
       UpdateType.MINOR,
@@ -144,7 +144,7 @@ export default class PointPresenter {
     );
   };
 
-  #handleFormSubmit = (updatedPoint) => {
+  #formSubmitHandler = (updatedPoint) => {
     this.#handleDataChange(
       UserAction.UPDATE_POINT,
       UpdateType.MINOR,
@@ -152,7 +152,7 @@ export default class PointPresenter {
     );
   };
 
-  #handleDeleteClick = (point) => {
+  #deleteClickHandler = (point) => {
     this.#handleDataChange(
       UserAction.DELETE_POINT,
       UpdateType.MINOR,
@@ -160,7 +160,7 @@ export default class PointPresenter {
     );
   };
 
-  #handleCloseClick = () => {
+  #closeClickHandler = () => {
     this.#pointEditComponent.reset(this.#point);
     this.#replaceFormToPoint();
   };

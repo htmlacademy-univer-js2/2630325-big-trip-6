@@ -1,7 +1,8 @@
 import TripInfoView from '../view/trip-info-view.js';
 import { render, replace, remove, RenderPosition } from '../framework/render.js';
-import { sortByDay } from '../utils.js';
-import dayjs from 'dayjs';
+import { sortByDay, formatDate } from '../utils.js';
+
+const MAX_DESTINATIONS_TO_DISPLAY = 3;
 
 export default class TripInfoPresenter {
   #container = null;
@@ -31,17 +32,17 @@ export default class TripInfoPresenter {
     const duration = this.#getTripDuration(sortedPoints);
     const cost = this.#getTripCost(sortedPoints);
 
-    const prevTripInfoComponent = this.#tripInfoComponent;
+    const previousTripInfoComponent = this.#tripInfoComponent;
 
     this.#tripInfoComponent = new TripInfoView({ title, duration, cost });
 
-    if (prevTripInfoComponent === null) {
+    if (!previousTripInfoComponent) {
       render(this.#tripInfoComponent, this.#container, RenderPosition.AFTERBEGIN);
       return;
     }
 
-    replace(this.#tripInfoComponent, prevTripInfoComponent);
-    remove(prevTripInfoComponent);
+    replace(this.#tripInfoComponent, previousTripInfoComponent);
+    remove(previousTripInfoComponent);
   }
 
   #handleModelEvent = () => {
@@ -50,20 +51,20 @@ export default class TripInfoPresenter {
 
   #getTripTitle(points) {
     const destinations = this.#pointsModel.destinations;
-    const destinationNames = points.map((point) => {
-      const dest = destinations.find((d) => d.id === point.destination);
-      return dest ? dest.name : '';
-    });
+
+    const destinationNames = points
+      .map((point) => destinations.find((destination) => destination.id === point.destination)?.name)
+      .filter(Boolean);
 
     if (destinationNames.length === 0) {
       return '';
     }
 
-    if (destinationNames.length <= 3) {
+    if (destinationNames.length <= MAX_DESTINATIONS_TO_DISPLAY) {
       return destinationNames.join(' — ');
     }
 
-    return `${destinationNames[0]} — ... — ${destinationNames[destinationNames.length - 1]}`;
+    return `${destinationNames.at(0)} — ... — ${destinationNames.at(-1)}`;
   }
 
   #getTripDuration(points) {
@@ -71,46 +72,38 @@ export default class TripInfoPresenter {
       return '';
     }
 
-    const startDate = points[0].dateFrom;
-    const endDate = points[points.length - 1].dateTo;
+    const startDate = points.at(0).dateFrom;
+    const endDate = points.at(-1).dateTo;
 
-    const startMonth = dayjs(startDate).format('MMM');
-    const endMonth = dayjs(endDate).format('MMM');
-    const startDay = dayjs(startDate).format('DD');
-    const endDay = dayjs(endDate).format('DD');
+    const startMonth = formatDate(startDate, 'MMM');
+    const endMonth = formatDate(endDate, 'MMM');
+    const startDay = formatDate(startDate, 'DD');
+    const endDay = formatDate(endDate, 'DD');
 
-    // Если даты и месяцы полностью совпадают (один день)
     if (startMonth === endMonth && startDay === endDay) {
       return `${startDay} ${startMonth}`;
     }
 
-    // Если месяцы совпадают, но дни разные (например 15 JUL — 16 JUL)
     if (startMonth === endMonth) {
       return `${startDay} ${startMonth}&nbsp;&mdash;&nbsp;${endDay} ${startMonth}`;
     }
 
-    // Если месяцы разные
     return `${startDay} ${startMonth}&nbsp;&mdash;&nbsp;${endDay} ${endMonth}`;
   }
 
   #getTripCost(points) {
-    const offers = this.#pointsModel.offers;
-    let cost = 0;
+    const allOffers = this.#pointsModel.offers;
 
-    points.forEach((point) => {
-      cost += point.basePrice;
+    return points.reduce((totalCost, point) => {
+      const pointTypeOffers = allOffers.find((offerGroup) => offerGroup.type === point.type);
 
-      const pointTypeOffers = offers.find((o) => o.type === point.type);
-      if (pointTypeOffers) {
-        point.offers.forEach((offerId) => {
-          const offer = pointTypeOffers.offers.find((o) => o.id === offerId);
-          if (offer) {
-            cost += offer.price;
-          }
-        });
-      }
-    });
+      const offersCost = pointTypeOffers
+        ? pointTypeOffers.offers
+          .filter((offer) => point.offers.includes(offer.id))
+          .reduce((sum, offer) => sum + offer.price, 0)
+        : 0;
 
-    return cost;
+      return totalCost + point.basePrice + offersCost;
+    }, 0);
   }
 }

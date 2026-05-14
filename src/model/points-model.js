@@ -1,6 +1,13 @@
 import Observable from '../framework/observable.js';
 import { UpdateType } from '../const.js';
 
+const KEY_MAPPING_TO_CLIENT = Object.freeze({
+  'base_price': 'basePrice',
+  'date_from': 'dateFrom',
+  'date_to': 'dateTo',
+  'is_favorite': 'isFavorite',
+});
+
 export default class PointsModel extends Observable {
   #pointsApiService = null;
   #points = [];
@@ -31,14 +38,17 @@ export default class PointsModel extends Observable {
         this.#pointsApiService.offers,
         this.#pointsApiService.destinations,
       ]);
+
       this.#points = points.map(this.#adaptToClient);
       this.#offers = offers;
       this.#destinations = destinations;
+
       this._notify(UpdateType.INIT);
     } catch (err) {
       this.#points = [];
       this.#offers = [];
       this.#destinations = [];
+
       this._notify(UpdateType.ERROR);
     }
   }
@@ -53,11 +63,13 @@ export default class PointsModel extends Observable {
     try {
       const response = await this.#pointsApiService.updatePoint(update);
       const updatedPoint = this.#adaptToClient(response);
+
       this.#points = [
         ...this.#points.slice(0, index),
         updatedPoint,
         ...this.#points.slice(index + 1),
       ];
+
       this._notify(updateType, updatedPoint);
     } catch (err) {
       throw new Error('Can\'t update point');
@@ -68,7 +80,9 @@ export default class PointsModel extends Observable {
     try {
       const response = await this.#pointsApiService.addPoint(update);
       const newPoint = this.#adaptToClient(response);
+
       this.#points = [newPoint, ...this.#points];
+
       this._notify(updateType, newPoint);
     } catch (err) {
       throw new Error('Can\'t add point');
@@ -84,30 +98,31 @@ export default class PointsModel extends Observable {
 
     try {
       await this.#pointsApiService.deletePoint(update);
+
       this.#points = [
         ...this.#points.slice(0, index),
         ...this.#points.slice(index + 1),
       ];
+
       this._notify(updateType);
     } catch (err) {
       throw new Error('Can\'t delete point');
     }
   }
 
-  #adaptToClient(point) {
-    const adaptedPoint = {
-      ...point,
-      basePrice: point['base_price'],
-      dateFrom: point['date_from'] !== null ? new Date(point['date_from']) : point['date_from'],
-      dateTo: point['date_to'] !== null ? new Date(point['date_to']) : point['date_to'],
-      isFavorite: point['is_favorite'],
-    };
+  #adaptToClient = (point) => {
+    const adaptedPoint = Object.entries(point).reduce((accumulator, [key, value]) => {
+      const clientKey = KEY_MAPPING_TO_CLIENT[key] || key;
+      let clientValue = value;
 
-    delete adaptedPoint['base_price'];
-    delete adaptedPoint['date_from'];
-    delete adaptedPoint['date_to'];
-    delete adaptedPoint['is_favorite'];
+      if (key === 'date_from' || key === 'date_to') {
+        clientValue = value !== null ? new Date(value) : value;
+      }
+
+      accumulator[clientKey] = clientValue;
+      return accumulator;
+    }, {});
 
     return adaptedPoint;
-  }
+  };
 }

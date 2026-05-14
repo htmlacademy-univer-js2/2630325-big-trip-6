@@ -6,53 +6,53 @@ import PointsModel from './model/points-model.js';
 import FilterModel from './model/filter-model.js';
 import PointsApiService from './points-api-service.js';
 import { render } from './framework/render.js';
-import { AUTHORIZATION, END_POINT } from './const.js';
+import { AUTH_TOKEN, SERVER_URL } from './const.js';
 
-const tripControlsFilters = document.querySelector('.trip-controls__filters');
-const tripEventsContainer = document.querySelector('.trip-events');
-const tripMainContainer = document.querySelector('.trip-main');
+const filtersElement = document.querySelector('.trip-controls__filters');
+const tripEventsElement = document.querySelector('.trip-events');
+const tripMainElement = document.querySelector('.trip-main');
 
-// Удаляем захардкоженную кнопку из HTML
-const staticNewEventButton = tripMainContainer.querySelector('.trip-main__event-add-btn');
-if (staticNewEventButton) {
-  staticNewEventButton.remove();
+const staticNewEventButtonElement = tripMainElement.querySelector('.trip-main__event-add-btn');
+
+if (staticNewEventButtonElement) {
+  staticNewEventButtonElement.remove();
 }
 
 const pointsModel = new PointsModel({
-  pointsApiService: new PointsApiService(END_POINT, AUTHORIZATION)
+  pointsApiService: new PointsApiService(SERVER_URL, AUTH_TOKEN),
 });
 
 const filterModel = new FilterModel();
 
-const boardPresenter = new BoardPresenter({
-  container: tripEventsContainer,
+const tripInfoPresenter = new TripInfoPresenter({
+  container: tripMainElement,
   pointsModel,
-  filterModel,
-  onNewPointDestroy: handleNewPointFormClose,
 });
 
 const filterPresenter = new FilterPresenter({
-  container: tripControlsFilters,
+  container: filtersElement,
   filterModel,
   pointsModel,
 });
 
-const tripInfoPresenter = new TripInfoPresenter({
-  container: tripMainContainer,
+const boardPresenter = new BoardPresenter({
+  container: tripEventsElement,
   pointsModel,
+  filterModel,
+  onNewPointDestroy: newPointFormCloseHandler,
 });
 
 const newPointButtonComponent = new NewPointButtonView({
-  onClick: handleNewPointButtonClick,
+  onClick: newPointButtonClickHandler,
 });
 
-function handleNewPointButtonClick() {
-  boardPresenter.createPoint();
-  newPointButtonComponent.setDisabled(true);
+function newPointFormCloseHandler() {
+  newPointButtonComponent.setDisabled(false);
 }
 
-function handleNewPointFormClose() {
-  newPointButtonComponent.setDisabled(false);
+function newPointButtonClickHandler() {
+  boardPresenter.createPoint();
+  newPointButtonComponent.setDisabled(true);
 }
 
 tripInfoPresenter.init();
@@ -60,7 +60,7 @@ filterPresenter.init();
 boardPresenter.init();
 
 newPointButtonComponent.setDisabled(true);
-render(newPointButtonComponent, tripMainContainer);
+render(newPointButtonComponent, tripMainElement);
 
 pointsModel.init().finally(() => {
   newPointButtonComponent.setDisabled(false);

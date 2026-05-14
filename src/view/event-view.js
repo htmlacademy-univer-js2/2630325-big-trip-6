@@ -1,14 +1,13 @@
 import AbstractView from '../framework/view/abstract-view.js';
 import {
-  capitalizeFirstLetter,
-  humanizePointDate,
-  humanizePointTime,
-  getDatetimeAttribute,
-  getTimeAttribute,
-  getDuration,
+  capitalizeWord,
+  formatDate,
+  calculateDuration,
+  escapeHtml
 } from '../utils.js';
+import { DateFormat } from '../const.js';
 
-function createSelectedOffersTemplate(selectedOffers) {
+const createSelectedOffersTemplate = (selectedOffers) => {
   if (selectedOffers.length === 0) {
     return '';
   }
@@ -16,7 +15,7 @@ function createSelectedOffersTemplate(selectedOffers) {
   const items = selectedOffers
     .map((offer) => `
       <li class="event__offer">
-        <span class="event__offer-title">${offer.title}</span>
+        <span class="event__offer-title">${escapeHtml(offer.title)}</span>
         &plus;&euro;&nbsp;
         <span class="event__offer-price">${offer.price}</span>
       </li>
@@ -29,9 +28,9 @@ function createSelectedOffersTemplate(selectedOffers) {
       ${items}
     </ul>
   `;
-}
+};
 
-function createEventTemplate(point, allOffers, allDestinations) {
+const createEventTemplate = (point, allOffers, allDestinations) => {
   const {
     type,
     dateFrom,
@@ -44,32 +43,44 @@ function createEventTemplate(point, allOffers, allDestinations) {
 
   const destination = allDestinations.find((item) => item.id === destinationId);
   const typeOffers = allOffers.find((item) => item.type === type);
+
   const selectedOffers = typeOffers
     ? typeOffers.offers.filter((offer) => selectedOfferIds.includes(offer.id))
     : [];
 
   const favoriteClass = isFavorite ? ' event__favorite-btn--active' : '';
+  const destinationName = destination ? escapeHtml(destination.name) : '';
+
+  const humanizedDate = formatDate(dateFrom, DateFormat.SHORT_DATE).toUpperCase();
+  const humanizedStartTime = formatDate(dateFrom, DateFormat.TIME);
+  const humanizedEndTime = formatDate(dateTo, DateFormat.TIME);
+
+  const datetimeAttribute = formatDate(dateFrom, DateFormat.HTML_DATE);
+  const startDatetimeAttribute = formatDate(dateFrom, DateFormat.HTML_DATETIME);
+  const endDatetimeAttribute = formatDate(dateTo, DateFormat.HTML_DATETIME);
 
   return `
     <li class="trip-events__item">
       <div class="event">
-        <time class="event__date" datetime="${getDatetimeAttribute(dateFrom)}">${humanizePointDate(dateFrom)}</time>
+        <time class="event__date" datetime="${datetimeAttribute}">${humanizedDate}</time>
         <div class="event__type">
           <img class="event__type-icon" width="42" height="42" src="img/icons/${type}.png" alt="Event type icon">
         </div>
-        <h3 class="event__title">${capitalizeFirstLetter(type)} ${destination ? destination.name : ''}</h3>
+        <h3 class="event__title">${capitalizeWord(type)} ${destinationName}</h3>
         <div class="event__schedule">
           <p class="event__time">
-            <time class="event__start-time" datetime="${getTimeAttribute(dateFrom)}">${humanizePointTime(dateFrom)}</time>
+            <time class="event__start-time" datetime="${startDatetimeAttribute}">${humanizedStartTime}</time>
             &mdash;
-            <time class="event__end-time" datetime="${getTimeAttribute(dateTo)}">${humanizePointTime(dateTo)}</time>
+            <time class="event__end-time" datetime="${endDatetimeAttribute}">${humanizedEndTime}</time>
           </p>
-          <p class="event__duration">${getDuration(dateFrom, dateTo)}</p>
+          <p class="event__duration">${calculateDuration(dateFrom, dateTo)}</p>
         </div>
         <p class="event__price">
           &euro;&nbsp;<span class="event__price-value">${basePrice}</span>
         </p>
+
         ${createSelectedOffersTemplate(selectedOffers)}
+
         <button class="event__favorite-btn${favoriteClass}" type="button">
           <span class="visually-hidden">Add to favorite</span>
           <svg class="event__favorite-icon" width="28" height="28" viewBox="0 0 28 28">
@@ -82,7 +93,7 @@ function createEventTemplate(point, allOffers, allDestinations) {
       </div>
     </li>
   `;
-}
+};
 
 export default class EventView extends AbstractView {
   #point = null;
@@ -101,6 +112,7 @@ export default class EventView extends AbstractView {
 
     this.element.querySelector('.event__rollup-btn')
       .addEventListener('click', this.#editClickHandler);
+
     this.element.querySelector('.event__favorite-btn')
       .addEventListener('click', this.#favoriteClickHandler);
   }
